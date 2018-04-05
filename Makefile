@@ -1,3 +1,6 @@
+IMAGE_ORG ?= $(shell git config --get remote.origin.url | awk -F":|/" '{print $$2}' | cut -d"." -f1)
+IMAGE_NAME := $(IMAGE_ORG)/gitmirror
+OUTPUT ?= ./bin/gitmirror
 
 default: build
 
@@ -12,10 +15,13 @@ deps:
 
 
 build: deps
-	go build -o bin/gitmirror .
+	go build -o $(OUTPUT) .
 
 run: build
-	./bin/gitmirror
+	$(OUTPUT)
 
 clean:
 	rm -rf bin
+
+image:
+	docker build -t $(IMAGE_NAME):latest .
