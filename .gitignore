@@ -17,3 +17,4 @@
 work/
 repos.*
 bin/
+.secret*

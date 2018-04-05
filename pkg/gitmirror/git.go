@@ -86,8 +86,8 @@ func Clone(url string, dest string) error {
 	}
 
 	log.Printf("Cloning %s into %s", url, dest)
-	if _, err := cmdRun("git", "clone", "--mirror", url, dest); err != nil {
-		return err
+	if out, err := cmdRun("git", "clone", "--mirror", url, dest); err != nil {
+		return errors.New(out)
 	}
 	return nil
 }
@@ -109,6 +109,7 @@ func RepoName(url string) string {
 
 // Run command on shell
 func cmdRun(cmd string, args ...string) (string, error) {
+	log.Printf("Run %s %s", cmd, strings.Join(args, " "))
 	c := exec.Command(cmd, args...)
 	out, err := c.CombinedOutput()
 	return string(out), err
