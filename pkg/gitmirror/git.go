@@ -2,7 +2,6 @@ package gitmirror
 
 import (
 	"bufio"
-	"errors"
 	"fmt"
 	"log"
 	"os"
@@ -62,7 +61,7 @@ func Push(dest string, remoteName string) error {
 	log.Printf("Pushing to %s", remoteName)
 	out, err := cmdRun("git", "-C", dest, "push", "--mirror", remoteName)
 	if err != nil {
-		return errors.New(out)
+		return err
 	}
 	log.Printf("Pushed, %s", out)
 	return nil
@@ -86,18 +85,17 @@ func Clone(url string, dest string) error {
 	}
 
 	log.Printf("Cloning %s into %s", url, dest)
-	if out, err := cmdRun("git", "clone", "--mirror", url, dest); err != nil {
-		return errors.New(out)
-	}
-	return nil
+	_, err := cmdRun("git", "clone", "--mirror", url, dest)
+
+	return err
 }
 
 // RemoteUpdate runs `git remote update --prune` for given `remoteName` on the repo at path `dest`
 func RemoteUpdate(dest string, remoteName string) error {
 	log.Printf("Updating remote %s", remoteName)
-	out, err := cmdRun("git", "-C", dest, "remote", "update", "--prune", remoteName)
+	_, err := cmdRun("git", "-C", dest, "remote", "update", "--prune", remoteName)
 	if err != nil {
-		return errors.New(out)
+		return err
 	}
 	return nil
 }
@@ -112,5 +110,18 @@ func cmdRun(cmd string, args ...string) (string, error) {
 	log.Printf("Run %s %s", cmd, strings.Join(args, " "))
 	c := exec.Command(cmd, args...)
 	out, err := c.CombinedOutput()
-	return string(out), err
+	outs := string(out)
+	if err != nil {
+		log.Printf("Command failed, output was:\n%s", indent(outs))
+	}
+	return outs, err
+}
+
+func indent(text string) string {
+	parts := strings.Split(text, "\n")
+	res := make([]string, len(parts))
+	for i, line := range parts {
+		res[i] = "  " + line
+	}
+	return strings.Join(res, "\n")
 }

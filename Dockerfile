@@ -12,5 +12,6 @@ RUN make
 
 # final stage
 FROM alpine
+RUN apk --no-cache add git openssh
 COPY --from=builder /gitmirror /
 ENTRYPOINT ["/gitmirror"]

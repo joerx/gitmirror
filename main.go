@@ -77,7 +77,6 @@ func actionMigrateRepos(c *cli.Context) error {
 	}
 
 	log.Printf("Found %d repos to mirror", len(repos))
-	fmt.Println(repos)
 
 	sess := session.Must(session.NewSession(&aws.Config{
 		Region: &region,
