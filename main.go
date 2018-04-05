@@ -32,9 +32,10 @@ func main() {
 			Value: "",
 		},
 		cli.StringFlag{
-			Name:  "aws-region",
-			Value: "ap-southeast-1",
-			Usage: "AWS region to create archived repos in",
+			Name:   "aws-region",
+			Value:  "ap-southeast-1",
+			Usage:  "AWS region to create archived repos in",
+			EnvVar: "AWS_REGION",
 		},
 		cli.StringFlag{
 			Name:   "workdir",
