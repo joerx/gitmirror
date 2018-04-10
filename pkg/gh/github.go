@@ -2,18 +2,13 @@ package gh
 
 import (
 	"context"
-	"errors"
 
 	"github.com/google/go-github/github"
 	"golang.org/x/oauth2"
 )
 
 // NewFromToken creates a `Client` using the given token for authentication
-func NewFromToken(token string) (*github.Client, error) {
-	if len(token) == 0 {
-		return nil, errors.New("Github token must be given and non-empty")
-	}
-
+func NewFromToken(token string) *github.Client {
 	ctx := context.Background()
 	ts := oauth2.StaticTokenSource(
 		&oauth2.Token{AccessToken: token},
@@ -22,7 +17,7 @@ func NewFromToken(token string) (*github.Client, error) {
 	tc := oauth2.NewClient(ctx, ts)
 	client := github.NewClient(tc)
 
-	return client, nil
+	return client
 }
 
 // ListPrivateReposByOrg will list private git repos by organisation
