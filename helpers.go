@@ -5,7 +5,7 @@ import (
 	"regexp"
 )
 
-var remoteRE = regexp.MustCompile(`git@github.com:([-_\w]*)/([-_\w]*).git`)
+var remoteRE = regexp.MustCompile(`git@github.com:([-_\w\.]*)/([-_\w\.]*).git`)
 
 // parseRemoteURL parses repo name and owner from its github clone URL
 // this is a lot faster than having to look up the repo matadata via API
