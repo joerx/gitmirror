@@ -38,17 +38,21 @@ func main() {
 	app.Commands = []cli.Command{
 		{
 			Name:   "mirror",
-			Action: actionMigrateRepos,
+			Action: actionMirrorRepos,
 			Usage:  "Mirror repositories",
 			Flags: []cli.Flag{
 				cli.BoolFlag{
 					Name:  "destroy",
-					Usage: "If set, delete source repo after migrating",
+					Usage: "If set, delete source repos after migrating",
 				},
 				cli.StringFlag{
 					Name:  "origin",
 					Usage: "Origin repo, if omitted will read list from stdin",
 					Value: "",
+				},
+				cli.BoolFlag{
+					Name:  "safe",
+					Usage: "Don't actually do anything dangerous, just print what's intended",
 				},
 			},
 		},
@@ -61,6 +65,10 @@ func main() {
 					Name:  "origin",
 					Usage: "Origin repo, if omitted will read list from stdin",
 					Value: "",
+				},
+				cli.BoolFlag{
+					Name:  "dry-run",
+					Usage: "Don't do anything, just print what's intended",
 				},
 			},
 		},
@@ -105,6 +113,7 @@ type cliOpts struct {
 	origin  string
 	ghOrg   string
 	ghToken string
+	safe    bool
 }
 
 func parseFlags(c *cli.Context) (*cliOpts, error) {
@@ -115,6 +124,7 @@ func parseFlags(c *cli.Context) (*cliOpts, error) {
 		ghToken: c.GlobalString("gh-token"),
 		destroy: c.Bool("destroy"),
 		origin:  c.String("origin"),
+		safe:    c.Bool("safe"),
 	}
 
 	if len(opts.ghToken) == 0 {
@@ -251,7 +261,7 @@ func restoreRepo(name string, org string, wd string, cc *codecommit.CodeCommit, 
 	return nil
 }
 
-func actionMigrateRepos(c *cli.Context) error {
+func actionMirrorRepos(c *cli.Context) error {
 
 	opts, err := parseFlags(c)
 	if err != nil {
@@ -271,8 +281,6 @@ func actionMigrateRepos(c *cli.Context) error {
 	switch {
 	case len(opts.origin) > 0:
 		repos = []string{opts.origin}
-	case len(opts.ghOrg) > 0:
-		repos, err = getReposFromGithub(ghc, opts.ghOrg)
 	default:
 		repos, err = getReposFromFile(os.Stdin)
 	}
@@ -282,10 +290,12 @@ func actionMigrateRepos(c *cli.Context) error {
 	}
 
 	log.Printf("Found %d repos to mirror", len(repos))
+
 	s, err := mirrorRepos(ghc, cc, &mirrorReposOpts{
 		repos:   repos,
 		destroy: opts.destroy,
 		workdir: opts.workdir,
+		safe:    opts.safe,
 	})
 
 	if err != nil {
@@ -302,6 +312,7 @@ type mirrorReposOpts struct {
 	repos   []string
 	destroy bool
 	workdir string
+	safe    bool
 }
 
 func mirrorRepos(gh *github.Client, cc *codecommit.CodeCommit, opts *mirrorReposOpts) (*stats, error) {
@@ -311,6 +322,11 @@ func mirrorRepos(gh *github.Client, cc *codecommit.CodeCommit, opts *mirrorRepos
 	wd, err := createWorkDir(opts.workdir)
 	if err != nil {
 		return nil, err
+	}
+
+	fmt.Printf("Found %d repos to process", len(opts.repos))
+	for _, url := range opts.repos {
+		fmt.Printf("- %s\n", url)
 	}
 
 	for _, url := range opts.repos {
@@ -325,12 +341,16 @@ func mirrorRepos(gh *github.Client, cc *codecommit.CodeCommit, opts *mirrorRepos
 			if err != nil {
 				return nil, err
 			}
+			log.Printf("Deleting repo at url %s", url)
+			if opts.safe {
+				log.Printf("Safe mode enabled, not really deleting")
+				continue
+			}
 			if err := deleteRepo(gh, owner, name); err != nil {
 				log.Print(err)
 				s.skip(url)
 				continue
 			}
-			log.Printf("Deleted repo at url %s", url)
 		}
 		s.success++
 	}
